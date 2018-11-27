@@ -44,7 +44,7 @@ class TestSDK(TestSDKBase):
         import subprocess
 
         try:
-            subprocess.check_output("cd %s; %s <<EOF\n./\nY\nEOF" % (sdk_dir, tcname), shell=True)
+            subprocess.check_output("cd %s; %s <<EOF\n./\nY\nEOF" % (sdk_dir, tcname), shell=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             bb.fatal("Couldn't install the SDK:\n%s" % e.output.decode("utf-8"))
 
