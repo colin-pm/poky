@@ -347,9 +347,46 @@ EOF
 
 	# append the SDK tarball
 	cat ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.${SDK_ARCHIVE_TYPE} >> ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.sh
+}
 
-	# delete the old tarball, we don't need it anymore
-	rm ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.${SDK_ARCHIVE_TYPE}
+TOOLCHAIN_PYZ_EXT_TMPL ?= "${COREBASE}/meta/files/toolchain-pyz-extract.py"
+
+fakeroot create_pyz() {
+	[ "${SDK_ARCHIVE_TYPE}" = "tar.xz" ] || bbfatal "Only 'tar.xz' is supported for SDK_ARCHIVE_TYPE with pyz SDK"
+
+	# copy in the template pyz extractor script
+	rm -rf ${T}/pyz
+	mkdir -p ${T}/pyz
+
+	cp ${TOOLCHAIN_PYZ_EXT_TMPL} ${T}/pyz/__main__.py
+
+	if [ ${SDK_RELOCATE_AFTER_INSTALL} -eq 1 ] ; then
+		cp ${TOOLCHAIN_SHAR_REL_TMPL} ${T}/pyz/post_install_command
+	fi
+	cat << "EOF" >> ${T}/pyz/pre_install_command
+${SDK_PRE_INSTALL_COMMAND}
+EOF
+
+	cat << "EOF" >> ${T}/pyz/post_install_command
+${SDK_POST_INSTALL_COMMAND}
+EOF
+
+	# substitute variables
+	sed -i -e 's#@SDK_ARCH@#${SDK_ARCH}#g' \
+		-e 's#@SDKPATH@#${SDKPATH}#g' \
+		-e 's#@SDKEXTPATH@#${SDKEXTPATH}#g' \
+		-e 's#@OLDEST_KERNEL@#${SDK_OLDEST_KERNEL}#g' \
+		-e 's#@REAL_MULTIMACH_TARGET_SYS@#${REAL_MULTIMACH_TARGET_SYS}#g' \
+		-e 's#@SDK_TITLE@#${@d.getVar("SDK_TITLE").replace('&', '\&')}#g' \
+		-e 's#@SDK_VERSION@#${SDK_VERSION}#g' \
+		-e 's#@SDK_TAR_NAME@#${TOOLCHAIN_OUTPUTNAME}.tar.xz#g' \
+		-e 's#@SDK_GCC_VER@#${@oe.utils.host_gcc_version(d, taskcontextonly=True)}#g' \
+		${T}/pyz/__main__.py
+
+	# Add the SDK tarball
+	cp ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.${SDK_ARCHIVE_TYPE} ${T}/pyz/
+
+	python3 -m zipapp -o ${SDKDEPLOYDIR}/${TOOLCHAIN_OUTPUTNAME}.pyz -p "/usr/bin/env python3" ${T}/pyz/
 }
 
 populate_sdk_log_check() {
@@ -387,7 +424,8 @@ python () {
 }
 
 do_populate_sdk[file-checksums] += "${TOOLCHAIN_SHAR_REL_TMPL}:True \
-                                    ${TOOLCHAIN_SHAR_EXT_TMPL}:True"
+                                    ${TOOLCHAIN_SHAR_EXT_TMPL}:True \
+                                    ${TOOLCHAIN_PYZ_EXT_TMPL}:True"
 
 do_populate_sdk[dirs] = "${PKGDATA_DIR} ${TOPDIR}"
 do_populate_sdk[depends] += "${@' '.join([x + ':do_populate_sysroot' for x in d.getVar('SDK_DEPENDS').split()])}  ${@d.getVarFlag('do_rootfs', 'depends', False)}"

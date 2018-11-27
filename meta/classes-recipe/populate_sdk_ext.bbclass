@@ -615,7 +615,7 @@ python copy_buildsystem () {
 def get_current_buildtools(d):
     """Get the file name of the current buildtools installer"""
     import glob
-    btfiles = glob.glob(os.path.join(d.getVar('SDK_DEPLOY'), '*-buildtools-nativesdk-standalone-*.sh'))
+    btfiles = glob.glob(os.path.join(d.getVar('SDK_DEPLOY'), '*-buildtools-nativesdk-standalone-*.pyz'))
     btfiles.sort(key=os.path.getctime)
     return os.path.basename(btfiles[-1])
 

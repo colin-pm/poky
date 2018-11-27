@@ -1,5 +1,5 @@
 #
-# Copyright 2018 by Garmin Ltd. or its subsidiaries
+# Copyright 2018-2020 by Garmin Ltd. or its subsidiaries
 #
 # SPDX-License-Identifier: MIT
 #
@@ -35,7 +35,7 @@ class TestSDK(TestSDKBase):
         """
         Get the name of the SDK file
         """
-        return d.expand("${SDK_DEPLOY}/${TOOLCHAIN_OUTPUTNAME}.sh")
+        return d.expand("${SDK_DEPLOY}/${TOOLCHAIN_OUTPUTNAME}.pyz")
 
     def extract_sdk(self, tcname, sdk_dir, d):
         """
