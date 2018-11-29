@@ -32,9 +32,12 @@ import zipfile
 SDK_TITLE = "@SDK_TITLE@"
 SDK_VERSION = "@SDK_VERSION@"
 SDK_ARCH = "@SDK_ARCH@"
-SDKPATH = "@SDKPATH@"
+SDK_EXTENSIBLE = "@SDK_EXTENSIBLE@" == "1"
+SDKPATH = "@SDKEXTPATH@" if SDK_EXTENSIBLE else "@SDKPATH@"
 SELF_ZIP = Path(__file__).parent.absolute()
 SDK_TAR_NAME = "@SDK_TAR_NAME@"
+SDK_GCC_VER = "@SDK_GCC_VER@"
+SDK_EXT_TYPE = "@SDK_EXT_TYPE@"
 OLDEST_KERNEL = "@OLDEST_KERNEL@"
 CHECKPOINT = 25600000
 PRESERVED_ENVS = (
@@ -177,6 +180,16 @@ def main():
         help="List files that will be extracted",
         action="store_true",
     )
+    ext_args = parser.add_argument_group(title="Extensible SDK Only Options")
+    ext_args.add_argument(
+        "-n",
+        dest="prepare_buildsystem",
+        help="Do not prepare build system",
+        action="store_false",
+    )
+    ext_args.add_argument(
+        "-p", dest="publish", help="Publish mode (implies -n)", action="store_true"
+    )
 
     args = parser.parse_args()
 
@@ -206,6 +219,23 @@ def main():
                 f"Error: Incompatible SDK installer! Your host is {host_arch} and this SDK was built for {sdk_arch} hosts."
             )
             return 1
+
+    if SDK_EXTENSIBLE:
+        host_gcc_ver = get_gcc_version()
+        if (
+            (host_gcc_ver == "4.8" and SDK_GCC_VER == "4.9")
+            or (host_gcc_ver == "4.8" and SDK_GCC_VER == "")
+            or (host_gcc_ver == "4.9" and SDK_GCC_VER == "")
+        ):
+            print(
+                "Error: Incompatible SDK installer! Your host gcc version is %s and this SDK was built by gcc higher version."
+                % host_gcc_ver
+            )
+            return 1
+
+        extract_exclude.add("ext-sdk-prepare.py")
+        if SDK_EXT_TYPE == "minimal":
+            extract_exclude.add("sstate-cache")
 
     title = f"{SDK_TITLE} installer version {SDK_VERSION}"
     print(title)
@@ -241,9 +271,7 @@ def main():
         return 1
 
     if re.search(r"\s", destination):
-        print(
-            f"The target directory path ({destination}) contains whitespace. Abort!"
-        )
+        print(f"The target directory path ({destination}) contains whitespace. Abort!")
         return 1
 
     if os.path.exists(
@@ -321,9 +349,7 @@ def main():
             to_try = "Administrative privileges"
         else:
             to_try = "'sudo'"
-        print(
-            f"Permission denied. Please try re-running with {to_try}:"
-        )
+        print(f"Permission denied. Please try re-running with {to_try}:")
         print(e)
         return 1
 

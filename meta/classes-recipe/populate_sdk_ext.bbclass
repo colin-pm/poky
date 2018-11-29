@@ -84,6 +84,7 @@ SDK_DIR:task-populate-sdk-ext = "${WORKDIR}/sdk-ext"
 B:task-populate-sdk-ext = "${SDK_DIR}"
 TOOLCHAINEXT_OUTPUTNAME ?= "${SDK_NAME}-toolchain-ext-${SDK_VERSION}"
 TOOLCHAIN_OUTPUTNAME:task-populate-sdk-ext = "${TOOLCHAINEXT_OUTPUTNAME}"
+SDK_EXTENSIBLE:task-populate-sdk-ext = "1"
 
 SDK_EXT_TARGET_MANIFEST = "${SDK_DEPLOY}/${TOOLCHAINEXT_OUTPUTNAME}.target.manifest"
 SDK_EXT_HOST_MANIFEST = "${SDK_DEPLOY}/${TOOLCHAINEXT_OUTPUTNAME}.host.manifest"
@@ -615,7 +616,10 @@ python copy_buildsystem () {
 def get_current_buildtools(d):
     """Get the file name of the current buildtools installer"""
     import glob
-    btfiles = glob.glob(os.path.join(d.getVar('SDK_DEPLOY'), '*-buildtools-nativesdk-standalone-*.pyz'))
+    ext = ".sh"
+    if d.getVar("SDK_PACKAGING_FUNC") == "create_pyz":
+        ext = ".pyz"
+    btfiles = glob.glob(os.path.join(d.getVar('SDK_DEPLOY'), '*-buildtools-nativesdk-standalone-*%s' % ext))
     btfiles.sort(key=os.path.getctime)
     return os.path.basename(btfiles[-1])
 

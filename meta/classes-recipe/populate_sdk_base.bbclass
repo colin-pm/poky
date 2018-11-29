@@ -117,6 +117,7 @@ SDK_PACKAGING_FUNC ?= "create_shar"
 SDK_PRE_INSTALL_COMMAND ?= ""
 SDK_POST_INSTALL_COMMAND ?= ""
 SDK_RELOCATE_AFTER_INSTALL ?= "1"
+SDK_EXTENSIBLE = "0"
 
 SDKEXTPATH ??= "~/${@d.getVar('DISTRO')}_sdk"
 SDK_TITLE ??= "${@d.getVar('DISTRO_NAME') or d.getVar('DISTRO')} SDK"
@@ -205,7 +206,7 @@ def populate_sdk_common(d):
     oe.packagedata.runtime_mapping_rename("TOOLCHAIN_HOST_TASK_ATTEMPTONLY", pn, ld)
     d.setVar("TOOLCHAIN_HOST_TASK", ld.getVar("TOOLCHAIN_HOST_TASK"))
     d.setVar("TOOLCHAIN_HOST_TASK_ATTEMPTONLY", ld.getVar("TOOLCHAIN_HOST_TASK_ATTEMPTONLY"))
-    
+
     # create target/host SDK manifests
     create_manifest(d, manifest_dir=d.getVar('SDK_DIR'),
                     manifest_type=Manifest.MANIFEST_TYPE_SDK_HOST)
@@ -381,6 +382,8 @@ EOF
 		-e 's#@SDK_VERSION@#${SDK_VERSION}#g' \
 		-e 's#@SDK_TAR_NAME@#${TOOLCHAIN_OUTPUTNAME}.tar.xz#g' \
 		-e 's#@SDK_GCC_VER@#${@oe.utils.host_gcc_version(d, taskcontextonly=True)}#g' \
+		-e 's#@SDK_EXTENSIBLE@#${SDK_EXTENSIBLE}#g' \
+		-e 's#@SDK_EXT_TYPE@#${SDK_EXT_TYPE}#g' \
 		${T}/pyz/__main__.py
 
 	# Add the SDK tarball
